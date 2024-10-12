@@ -66,7 +66,12 @@ class GiftRepository
                 $multipleNum = 100;//通过一定算法计算该礼物会返回给赠送者N倍的礼物价值;
                 $backCoin    = bcmul($multipleNum, $giftUnitCoin, 8);
                 if ($backCoin > 0) {
-                    User::query()->where('id', $to_uid)->increment('coin', $backCoin);
+                    // User::query()->where('id', $to_uid)->increment('coin', $backCoin);
+                    # 用户表更新使用队列异步操作
+                    Demo::dispatch([
+                        'userId' => $to_uid,
+                        'coin' => $backCoin
+                    ])
                     $userCoinBalance = floatval($userCoinBalance) + floatval($backCoin);
                     $bill            = [
                         'title'   => '幸运礼物奖励',
@@ -159,7 +164,12 @@ class GiftRepository
 
         ## 房主分配
         ### 增加每个受益人冻结资金余额并记录账单
-        User::query()->where('id', $owner_uid)->increment('money', $profitDistribution['owner']);
+        // User::query()->where('id', $owner_uid)->increment('money', $profitDistribution['owner']);
+         # 用户表更新使用队列异步操作
+        Demo::dispatch([
+            'userId' => $owner_uid,
+            'money' => $profitDistribution['owner']
+        ])
         $userMoney        = User::query()->where(['id' => $owner_uid])->first(['money']);
         $userMoneyBalance = bcadd($userMoney['money'], $userMoney['money'], 8);
         $bill             = [
@@ -174,7 +184,12 @@ class GiftRepository
         ];
         UserBillRepository::userBillIncome($bill);
         ## 主持人分配
-        User::query()->where('id', $host_uid)->increment('money', $profitDistribution['host']);
+        // User::query()->where('id', $host_uid)->increment('money', $profitDistribution['host']);
+         # 用户表更新使用队列异步操作
+         Demo::dispatch([
+            'userId' => $host_uid,
+            'money' => $profitDistribution['host']
+        ])
         $userMoney        = User::query()->where(['id' => $host_uid])->first(['money']);
         $userMoneyBalance = bcadd($userMoney['money'], $userMoney['money'], 8);
         $bill             = [
@@ -189,7 +204,12 @@ class GiftRepository
         ];
         UserBillRepository::userBillIncome($bill);
         # 礼物接受者分成
-        User::query()->where('id', $to_uid)->increment('money', $profitDistribution['recipient']);
+        // User::query()->where('id', $to_uid)->increment('money', $profitDistribution['recipient']);
+        # 用户表更新使用队列异步操作
+        Demo::dispatch([
+            'userId' => $to_uid,
+            'money' => $profitDistribution['recipient']
+        ])
         $userMoney        = User::query()->where(['id' => $to_uid])->first(['money']);
         $userMoneyBalance = bcadd($userMoney['money'], $userMoney['money'], 8);
         $bill             = [
